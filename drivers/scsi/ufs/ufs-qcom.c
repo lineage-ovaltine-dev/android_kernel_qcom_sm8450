@@ -3117,8 +3117,9 @@ static void ufs_qcom_parse_irq_affinity(struct ufs_hba *hba)
 		}
 	}
 	/* If device includes perf mask, enable dynamic irq affinity feature */
-	if (host->perf_mask.bits[0])
-		host->irq_affinity_support = true;
+	//if (host->perf_mask.bits[0])
+	//	host->irq_affinity_support = true;
+	// Disable it by default
 }
 
 static void ufs_qcom_parse_pm_level(struct ufs_hba *hba)
@@ -4998,7 +4999,7 @@ static int ufs_cpufreq_status(void)
 
 	policy = cpufreq_cpu_get(0);
 	if (!policy) {
-		dev_warn(dev, "cpufreq not probed yet, defer once\n");
+		pr_warn("%s: cpufreq not probed yet, defer once\n", __func__);
 		return -EPROBE_DEFER;
 	}
 

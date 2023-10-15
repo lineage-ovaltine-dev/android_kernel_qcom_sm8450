@@ -229,40 +229,6 @@ static bool __init obsolete_checksetup(char *line)
 unsigned long loops_per_jiffy = (1<<12);
 EXPORT_SYMBOL(loops_per_jiffy);
 
-static int __init debug_kernel(char *str)
-{
-	console_loglevel = CONSOLE_LOGLEVEL_DEBUG;
-	return 0;
-}
-
-static int __init quiet_kernel(char *str)
-{
-	console_loglevel = CONSOLE_LOGLEVEL_QUIET;
-	return 0;
-}
-
-early_param("debug", debug_kernel);
-early_param("quiet", quiet_kernel);
-
-static int __init loglevel(char *str)
-{
-	int newlevel;
-
-	/*
-	 * Only update loglevel value when a correct setting was passed,
-	 * to prevent blind crashes (when loglevel being set to 0) that
-	 * are quite hard to debug
-	 */
-	if (get_option(&str, &newlevel)) {
-		console_loglevel = newlevel;
-		return 0;
-	}
-
-	return -EINVAL;
-}
-
-early_param("loglevel", loglevel);
-
 #ifdef CONFIG_BLK_DEV_INITRD
 static void * __init get_boot_config_from_initrd(u32 *_size, u32 *_csum)
 {
@@ -837,6 +803,8 @@ void __init __weak arch_call_rest_init(void)
 	rest_init();
 }
 
+void __init init_sync_kmem_pool(void);
+void __init init_dma_buf_kmem_pool(void);
 asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 {
 	char *command_line;
@@ -1029,6 +997,8 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	cgroup_init();
 	taskstats_init_early();
 	delayacct_init();
+	init_sync_kmem_pool();
+	init_dma_buf_kmem_pool();
 
 	acpi_subsystem_init();
 	arch_post_acpi_subsys_init();
@@ -1356,7 +1326,7 @@ __setup("rodata=", set_debug_rodata);
 #endif
 
 #ifdef CONFIG_STRICT_KERNEL_RWX
-static void mark_readonly(void)
+void mark_readonly(void)
 {
 	if (rodata_enabled) {
 		/*
@@ -1372,12 +1342,12 @@ static void mark_readonly(void)
 		pr_info("Kernel memory protection disabled.\n");
 }
 #elif defined(CONFIG_ARCH_HAS_STRICT_KERNEL_RWX)
-static inline void mark_readonly(void)
+void mark_readonly(void)
 {
 	pr_warn("Kernel memory protection not selected by kernel config.\n");
 }
 #else
-static inline void mark_readonly(void)
+void mark_readonly(void)
 {
 	pr_warn("This architecture does not have kernel memory protection.\n");
 }
@@ -1398,8 +1368,10 @@ static int __ref kernel_init(void *unused)
 	kprobe_free_init_mem();
 	ftrace_free_init_mem();
 	kgdb_free_init_mem();
+#ifndef CONFIG_LAZY_INITCALL
 	free_initmem();
 	mark_readonly();
+#endif
 
 	/*
 	 * Kernel mappings are now finalized - update the userspace page-table

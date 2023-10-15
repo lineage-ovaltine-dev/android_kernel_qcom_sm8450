@@ -84,16 +84,17 @@ config SWIOTLB
 	bool
 	select NEED_DMA_MAP_STATE
 
-config SWIOTLB_NONLINEAR
-	bool "Allow swiotlb to use non-linear memory as bounce buffers"
-	depends on SWIOTLB
+config DMA_RESTRICTED_POOL
+	bool "DMA Restricted Pool"
+	depends on OF && OF_RESERVED_MEM && SWIOTLB
 	help
-	  This allows swiotlb driver to work with memory regions where
-	  physical to virtual address translations can't be done using APIs
-	  such as phys_to_virt. These could be reserved memory regions that
-	  are not mapped by default or could be seen as "device" memory
-	  accessed via ioremap().
+	  This enables support for restricted DMA pools which provide a level of
+	  DMA memory protection on systems with limited hardware protection
+	  capabilities, such as those lacking an IOMMU.
 
+	  For more information see
+	  <Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt>
+	  and <kernel/dma/swiotlb.c>.
 	  If unsure, say "n".
 
 #
